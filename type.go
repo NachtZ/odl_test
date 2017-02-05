@@ -223,6 +223,16 @@ type BaseRecord struct {
 			AccelerationTx float64
 		} //save the rate of pps
 	}
+	Average struct { // here in fact just record the max Acceleration not the max one.
+		Bytes struct {
+			AccelerationRx float64
+			AccelerationTx float64
+		} //save the rate of bps
+		Pkts struct {
+			AccelerationRx float64
+			AccelerationTx float64
+		} //save the rate of pps
+	}
 }
 
 type StaticRecord interface {
@@ -232,4 +242,8 @@ type StaticRecord interface {
 	InitRecord(getStatistic func() []ODLInventoryNode) []BaseRecord // Study the hole network's traffic statistic.
 }
 
-type Recorder []BaseRecord
+type Recorder struct {
+	RawRecord []BaseRecord
+	RecordMap map[string]*BaseRecord // RecordMap[NodeID]BaseRecordPtr
+
+}

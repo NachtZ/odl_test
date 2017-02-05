@@ -62,21 +62,21 @@ func GetOpenflowNodes() []ODLInventoryNode {
 *v1, 2017/2/3, demo, do not support dynamic topo, and support topo node is less then 1024.
 *
  */
-func (base *Recorder) InitRecord(getStaistic func() []ODLInventoryNode) []BaseRecord {
+func (base *Recorder) InitRecord(getStaistic func() []ODLInventoryNode) *Recorder {
 	before := getStaistic()
 	totalNC := 0
 	for _, nc := range before {
 		totalNC += len(nc.NodeConnectors)
 	}
-	if totalNC >= len(*base) {
+	if totalNC >= len((*base).RawRecord) {
 		fmt.Println("Too much NodeConnectors in this Topo! Can not init the recorder.")
 		return nil
 	}
 	i := 0
 	for _, node := range before {
 		for _, nc := range node.NodeConnectors {
-			(*base)[i].ID = nc.ID
-			if len((*base)[i].Records) < 10080 {
+			(*base).RawRecord[i].ID = nc.ID
+			if len((*base).RawRecord[i].Records) < 10080 {
 				fmt.Println("Error in len(base[i].Records)")
 				return nil
 			}
@@ -101,43 +101,59 @@ func (base *Recorder) InitRecord(getStaistic func() []ODLInventoryNode) []BaseRe
 			fmt.Println("NC statistic:")
 			for idx1, nc := range node.NodeConnectors {
 				fmt.Println(nc.ID, "|", nc.Name)
-				if idx1 >= len(tmp.NodeConnectors) || nc.ID != tmp.NodeConnectors[idx1].ID || (*base)[i].ID != nc.ID {
+				if idx1 >= len(tmp.NodeConnectors) || nc.ID != tmp.NodeConnectors[idx1].ID || (*base).RawRecord[i].ID != nc.ID {
 					fmt.Println("Network Topo changed, Please wait!")
 					return nil
 				}
-				(*base)[i].Records[counter].Time.Day = timenow.Day()
-				(*base)[i].Records[counter].Time.Hour = timenow.Hour()
-				(*base)[i].Records[counter].Time.Min = timenow.Minute()
+				(*base).RawRecord[i].Records[counter].Time.Day = timenow.Day()
+				(*base).RawRecord[i].Records[counter].Time.Hour = timenow.Hour()
+				(*base).RawRecord[i].Records[counter].Time.Min = timenow.Minute()
 
 				time := nc.OPFstatics.Duration.Second - tmp.NodeConnectors[idx1].OPFstatics.Duration.Second
 				fmt.Println("time:", time, nc.OPFstatics.Duration.Second, tmp.NodeConnectors[idx1].OPFstatics.Duration.Second)
-				if time == 0 { //impossible happend. But sometimes ODL will get error and return the same value every times.
+				if time == 0 { //impossible happend. But sometimes ODL will get error and then eturn the same value every times.
 					time = 1
 				}
-				(*base)[i].Records[counter].Bytes.Rx = float64((nc.OPFstatics.Bytes.Rx - tmp.NodeConnectors[idx1].OPFstatics.Bytes.Rx) / time)
-				(*base)[i].Records[counter].Pkts.Rx = float64((nc.OPFstatics.Pkts.Rx - tmp.NodeConnectors[idx1].OPFstatics.Pkts.Rx) / time)
-				(*base)[i].Records[counter].Bytes.Tx = float64((nc.OPFstatics.Bytes.Tx - tmp.NodeConnectors[idx1].OPFstatics.Bytes.Tx) / time)
-				(*base)[i].Records[counter].Pkts.Tx = float64((nc.OPFstatics.Pkts.Tx - tmp.NodeConnectors[idx1].OPFstatics.Pkts.Tx) / time)
+				(*base).RawRecord[i].Records[counter].Bytes.Rx = float64((nc.OPFstatics.Bytes.Rx - tmp.NodeConnectors[idx1].OPFstatics.Bytes.Rx) / time)
+				(*base).RawRecord[i].Records[counter].Pkts.Rx = float64((nc.OPFstatics.Pkts.Rx - tmp.NodeConnectors[idx1].OPFstatics.Pkts.Rx) / time)
+				(*base).RawRecord[i].Records[counter].Bytes.Tx = float64((nc.OPFstatics.Bytes.Tx - tmp.NodeConnectors[idx1].OPFstatics.Bytes.Tx) / time)
+				(*base).RawRecord[i].Records[counter].Pkts.Tx = float64((nc.OPFstatics.Pkts.Tx - tmp.NodeConnectors[idx1].OPFstatics.Pkts.Tx) / time)
 				if counter > 0 {
-					(*base)[i].Records[counter].Bytes.AccelerationRx = ((*base)[i].Records[counter].Bytes.Rx - (*base)[i].Records[counter-1].Bytes.Rx) / float64(time)
-					(*base)[i].Records[counter].Pkts.AccelerationRx = ((*base)[i].Records[counter].Pkts.Rx - (*base)[i].Records[counter-1].Pkts.Rx) / float64(time)
-					(*base)[i].Records[counter].Bytes.AccelerationTx = ((*base)[i].Records[counter].Bytes.Tx - (*base)[i].Records[counter-1].Bytes.Tx) / float64(time)
-					(*base)[i].Records[counter].Pkts.AccelerationTx = ((*base)[i].Records[counter].Pkts.Tx - (*base)[i].Records[counter-1].Pkts.Tx) / float64(time)
+					(*base).RawRecord[i].Records[counter].Bytes.AccelerationRx = ((*base).RawRecord[i].Records[counter].Bytes.Rx - (*base).RawRecord[i].Records[counter-1].Bytes.Rx) / float64(time)
+					(*base).RawRecord[i].Records[counter].Pkts.AccelerationRx = ((*base).RawRecord[i].Records[counter].Pkts.Rx - (*base).RawRecord[i].Records[counter-1].Pkts.Rx) / float64(time)
+					(*base).RawRecord[i].Records[counter].Bytes.AccelerationTx = ((*base).RawRecord[i].Records[counter].Bytes.Tx - (*base).RawRecord[i].Records[counter-1].Bytes.Tx) / float64(time)
+					(*base).RawRecord[i].Records[counter].Pkts.AccelerationTx = ((*base).RawRecord[i].Records[counter].Pkts.Tx - (*base).RawRecord[i].Records[counter-1].Pkts.Tx) / float64(time)
+					if (*base).RawRecord[i].Records[counter].Bytes.AccelerationRx > (*base).RawRecord[i].Average.Bytes.AccelerationRx {
+						(*base).RawRecord[i].Average.Bytes.AccelerationRx = (*base).RawRecord[i].Records[counter].Bytes.AccelerationRx
+					}
+					if (*base).RawRecord[i].Records[counter].Bytes.AccelerationTx > (*base).RawRecord[i].Average.Bytes.AccelerationTx {
+						(*base).RawRecord[i].Average.Bytes.AccelerationTx = (*base).RawRecord[i].Records[counter].Bytes.AccelerationTx
+					}
+					if (*base).RawRecord[i].Records[counter].Pkts.AccelerationRx > (*base).RawRecord[i].Average.Pkts.AccelerationRx {
+						(*base).RawRecord[i].Average.Pkts.AccelerationRx = (*base).RawRecord[i].Records[counter].Pkts.AccelerationRx
+					}
+					if (*base).RawRecord[i].Records[counter].Pkts.AccelerationTx > (*base).RawRecord[i].Average.Pkts.AccelerationTx {
+						(*base).RawRecord[i].Average.Pkts.AccelerationTx = (*base).RawRecord[i].Records[counter].Pkts.AccelerationTx
+					}
 				}
-				fmt.Println("Rx Speed:", (*base)[i].Records[counter].Bytes.Rx, "bps", (*base)[i].Records[counter].Pkts.Rx, "pps")
-				fmt.Println("Rx Acceleration:", (*base)[i].Records[counter].Bytes.AccelerationRx, "bps", (*base)[i].Records[counter].Pkts.AccelerationRx, "pps")
-				fmt.Println("Tx Speed:", (*base)[i].Records[counter].Bytes.Tx, "bps", (*base)[i].Records[counter].Pkts.Tx, "pps")
-				fmt.Println("Tx Acceleration:", (*base)[i].Records[counter].Bytes.AccelerationTx, "bps", (*base)[i].Records[counter].Pkts.AccelerationTx, "pps")
+				fmt.Println("Rx Speed:", (*base).RawRecord[i].Records[counter].Bytes.Rx, "bps", (*base).RawRecord[i].Records[counter].Pkts.Rx, "pps")
+				fmt.Println("Rx Acceleration:", (*base).RawRecord[i].Records[counter].Bytes.AccelerationRx, "bps", (*base).RawRecord[i].Records[counter].Pkts.AccelerationRx, "pps")
+				fmt.Println("Tx Speed:", (*base).RawRecord[i].Records[counter].Bytes.Tx, "bps", (*base).RawRecord[i].Records[counter].Pkts.Tx, "pps")
+				fmt.Println("Tx Acceleration:", (*base).RawRecord[i].Records[counter].Bytes.AccelerationTx, "bps", (*base).RawRecord[i].Records[counter].Pkts.AccelerationTx, "pps")
 				i++
 			}
 		}
 		before = now
 	}
-	return *base
+	for _, rec := range (*base).RawRecord {
+		(*base).RecordMap[rec.ID] = &rec
+	}
+	return base
 }
 
 func testInitRecord() {
-	recorder := make(Recorder, 1024)
+	var recorder Recorder
+	recorder.RawRecord = make([]BaseRecord, 1024)
 	recorder.InitRecord(GetOpenflowNodes)
 }
 
