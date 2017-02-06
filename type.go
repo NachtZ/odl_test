@@ -202,6 +202,22 @@ type ODLInventoryNode struct {
 	} `json:"opendaylight-group-statistics:group-features"`
 }
 
+type SingleRecord struct {
+	ID    string // node ID
+	Bytes struct {
+		Rx             float64
+		Tx             float64
+		AccelerationRx float64
+		AccelerationTx float64
+	} //save the rate of bps
+	Pkts struct {
+		Rx             float64
+		Tx             float64
+		AccelerationRx float64
+		AccelerationTx float64
+	} //save the rate of pps
+}
+
 type BaseRecord struct {
 	ID      string // node ID
 	Records [10800]struct {
@@ -236,10 +252,10 @@ type BaseRecord struct {
 }
 
 type StaticRecord interface {
-	UpdateRecord(rec BaseRecord)                                    // add a record.
-	AddNodes(recs []BaseRecord)                                     // add a set of record
-	CheckAttack(rec interface{}) []string                           //Judge the network's flow is normal or not. Return a set of NodeID or NodeConnector ID.
-	InitRecord(getStatistic func() []ODLInventoryNode) []BaseRecord // Study the hole network's traffic statistic.
+	UpdateRecord(rec BaseRecord)                                 // add a record.
+	AddNodes(recs []BaseRecord)                                  // add a set of record
+	CheckAttack(rec []SingleRecord) []string                     //Judge the network's flow is normal or not. Return a set of NodeID or NodeConnector ID.
+	InitRecord(getStatistic func() []ODLInventoryNode) *Recorder // Study the hole network's traffic statistic.
 }
 
 type Recorder struct {
