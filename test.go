@@ -272,5 +272,5 @@ func SpeedMonitor() {
 }
 
 func main() {
-	testGetBaseRecord()
+	testFlowEntryMgr()
 }
