@@ -38,14 +38,14 @@ func (base ODLBasic) GetFlowEntry(nodeid string, tableid int, flowid string) str
 	}
 
 	log.Printf("%+v\n", t)
-	log.Printf("%+v\n", *t.Flow[0].Match)
-	log.Printf("%+v\n", *t.Flow[0].Instructions)
+	//log.Printf("%+v\n", *t.Flow[0].Match)
+	//log.Printf("%+v\n", *t.Flow[0].Instructions)
 
 	return string(contents)
 }
 
-func (base ODLBasic) PutFlowEntry(nodeid string, tableid int, flow FlowEntry) {
-	url := base.BaseUrl + "/restconf/config/opendaylight-inventory:nodes/node/" + nodeid + "/table/" + strconv.Itoa(tableid) + "/flow/" + flow.ID
+func (base ODLBasic) PutFlowEntry(nodeid string, flow FlowEntry) {
+	url := base.BaseUrl + "/restconf/config/opendaylight-inventory:nodes/node/" + nodeid + "/table/" + strconv.Itoa(int(flow.TableID)) + "/flow/" + flow.ID //here may have bug when convent int64 to int
 	log.Println(url)
 	client := &http.Client{}
 	ctx, err := json.Marshal(flow)
@@ -66,6 +66,73 @@ func (base ODLBasic) PutFlowEntry(nodeid string, tableid int, flow FlowEntry) {
 	log.Println(string(contents))
 }
 
+func (base ODLBasic) SentFlowConfig(nodeid string, flowconfig FlowConfig) {
+	var flow FlowEntry
+	flow.Cookie = flowconfig.Cookie
+	flow.FlowName = flowconfig.Name
+	flow.ID = flowconfig.ID
+	flow.Priority = flowconfig.Priority
+	flow.TableID = flowconfig.TableId
+	flow.Instructions.List = make([]FlowEntryInstruction, 1)
+	flow.Instructions.List[0].ApplyAction.Actions = make([]FLowEntryApplyAction, 1)
+	flow.Instructions.List[0].ApplyAction.Actions[0].Order = 0 //default order
+	flow.Instructions.List[0].ApplyAction.Actions[0].OutputAcion.OutputNodeConnector = flowconfig.Outputnode
+	//flow.Instructions.List[0].ApplyAction.Actions[0].OutputAcion.MaxLength =
+	if flowconfig.EtherType != 0 || flowconfig.EthDst != "" || flowconfig.EthSrc != "" { //ether config
+		var t EthernetMatch
+		flow.Match.EthernetMatch = &t
+		if flowconfig.EtherType != 0 {
+			t.EthernetType = &EthernetType{
+				uint32(flowconfig.EtherType),
+			}
+		}
+		if flowconfig.EthDst != "" {
+			t.EthernetDestination = &EthernetAddr{
+				flowconfig.EthDst,
+				"", //Should add EthMask support.
+			}
+		}
+		if flowconfig.EthSrc != "" {
+			t.EthernetSource = &EthernetAddr{
+				flowconfig.EthSrc,
+				"", //Should add EthMask support.
+			}
+		}
+	}
+	if flowconfig.IpConfig.Dst != "" || flowconfig.IpConfig.Src != "" || flowconfig.IpConfig.Protocol != 0 { //here just support v4 config
+		if flowconfig.IpConfig.Dst != "" {
+			flow.Match.Ipv4Dest = flowconfig.IpConfig.Dst
+		}
+		if flowconfig.IpConfig.Src != "" {
+			flow.Match.Ipv4Src = flowconfig.IpConfig.Src
+		}
+		if flowconfig.IpConfig.Protocol != 0 {
+			flow.Match.IpMatch = &IpMatch{
+				flowconfig.IpConfig.Protocol,
+				0,
+				0,
+				flowconfig.IpType,
+			}
+		}
+	}
+	if flowconfig.TcpConfig.SrcPort != 0 || flowconfig.TcpConfig.DstPort != 0 { // now ignort layer4Match
+	}
+	if flowconfig.IcmpConfig.Code != 0 || flowconfig.IcmpConfig.Type != 0 {
+		if flowconfig.IpType == 6 {
+			flow.Match.IcmpV6Match = &IcmpV6Match{
+				flowconfig.IcmpConfig.Type,
+				flowconfig.IcmpConfig.Code,
+			}
+		} else {
+			flow.Match.IcmpV4Match = &IcmpV4Match{
+				flowconfig.IcmpConfig.Type,
+				flowconfig.IcmpConfig.Code,
+			}
+		}
+	}
+	base.PutFlowEntry(nodeid, flow)
+}
+
 func testPutFlowEntry() {
 	base := ODLBasic{
 		"http://10.108.20.110:8181",
@@ -75,15 +142,41 @@ func testPutFlowEntry() {
 	var flow FlowEntry
 	flow.ID = "1"
 	flow.FlowName = "test"
-	flow.Match.EthernetMatch.EthernetType.Type = 2048
+	flow.TableID = 0
+	flow.Priority = 2
+	flow.Match.EthernetMatch = &EthernetMatch{
+		nil,
+		nil,
+		&EthernetType{
+			2048,
+		},
+	}
 	flow.Instructions.List = make([]FlowEntryInstruction, 1)
 	flow.Instructions.List[0].ApplyAction.Actions = make([]FLowEntryApplyAction, 1)
 	flow.Instructions.List[0].ApplyAction.Actions[0].Order = 0
 	flow.Instructions.List[0].ApplyAction.Actions[0].OutputAcion.OutputNodeConnector = "1"
 	flow.Instructions.List[0].ApplyAction.Actions[0].OutputAcion.MaxLength = 60
-	base.PutFlowEntry("openflow:1", 0, flow)
+	base.PutFlowEntry("openflow:1", flow)
 }
 
+func testSentFlowConfig() {
+	fc := FlowConfig{
+		Name:       "testSentFlowConfig",
+		Node:       "openflow:1",
+		ID:         "2",
+		Priority:   2,
+		TableId:    0,
+		Outputnode: "openflow:1:2",
+		EtherType:  2048,
+	}
+	fc.IpConfig.Protocol = 6
+	base := ODLBasic{
+		"http://10.108.20.110:8181",
+		"admin",
+		"admin",
+	}
+	base.SentFlowConfig("openflow:1", fc)
+}
 func testFlowEntryMgr() {
 	base := ODLBasic{
 		"http://10.108.20.110:8181",
