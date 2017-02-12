@@ -133,6 +133,34 @@ func (base ODLBasic) SentFlowConfig(nodeid string, flowconfig FlowConfig) {
 	base.PutFlowEntry(nodeid, flow)
 }
 
+func (base ODLBasic) DeleteFlowEntry(nodeid string, tableid int, flowid string) {
+	url := base.BaseUrl + "/restconf/config/opendaylight-inventory:nodes/node/" + nodeid + "/table/" + strconv.Itoa(tableid) + "/flow/" + flowid
+	log.Println(url)
+	client := &http.Client{}
+	req, err := http.NewRequest("DELETE", url, nil)
+	req.SetBasicAuth(base.User, base.Password)
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Println("Error")
+	}
+	contents, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	log.Println(string(contents))
+}
+
+func testDeleteFlowEntry(){
+	base := ODLBasic{
+		"http://10.108.20.110:8181",
+		"admin",
+		"admin",
+	}	
+	base.DeleteFlowEntry("openflow:1", 0, "1")
+}
+
 func testPutFlowEntry() {
 	base := ODLBasic{
 		"http://10.108.20.110:8181",

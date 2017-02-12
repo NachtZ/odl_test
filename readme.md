@@ -16,6 +16,8 @@ personal backup, for ddos protect in opendaylight boron.
 或者利用流标签法对流量进行标记。
 获取
 
+## 基于流表的流量统计，output action可以试试看是不是output normal来实现。 ##
+
 可能用到的技术：
 包标签法，snort， VTN，docker
 
@@ -48,3 +50,15 @@ flow table 的cookie是什么意思。
 传入的参数有：dest ip, src ip, dest port ,src ip, protocol type等。
 需要根据这些参数构造一个流表 entry。
 其中源目ip固定，根据ip type变更相应的条目。
+
+## 2017/2/11 ##
+读defense4all的源码。
+
+## 2017/2/12 ##
+[一种流量迁移的方法。](https://floodlight.atlassian.net/wiki/display/floodlightcontroller/How+to+Perform+Transparent+Packet+Redirection+with+OpenFlow+and+Floodlight)
+0. 前提：判断设备是双网卡设备，in和out网卡分别挂在不同的交换机上面。判断设备同一时间只能判断一个nc上的流量。  
+1. 按链接所示，将node中的目的ip为nc的ip全部都改为判断设备的ip。  
+2. 在判断设备中，进行两件事情，第一，在out网卡所在的交换机，设定将目的ip为入口网卡的ip改为之前的nc，ip。  
+3. 在判断完成后，删除所有添加的流表，还原交换机。  
+4. 对于判断结果，可以这样，将认为是攻击流量的ip全部转换为flow entries.下发到所有node。
+5. 4中描述有待商榷，是属于思路4的内容了。目前暂不考虑。
