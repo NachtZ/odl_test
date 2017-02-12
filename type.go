@@ -69,6 +69,13 @@ type NodeConnector struct {
 			Tx int64 `json:"transmitted"`
 		} `json:"packets"`
 	} `json:"opendaylight-port-statistics:flow-capable-node-connector-statistics"`
+	AddressList []struct {
+		ID        int    `json:"id"`
+		MAC       string `json:"mac"`
+		IP        string `json:"ip"`
+		Firstseen uint64 `json:"first-seen"`
+		Lastseen  uint64 `json:"last-seen"`
+	} `json:"address-tracker:addresses"`
 }
 
 type jsonNodeConnector struct {
@@ -219,7 +226,7 @@ type SingleRecord struct {
 }
 
 type BaseRecord struct {
-	ID      string // node ID
+	ID      string // node connector ID
 	Records [10800]struct {
 		Time struct {
 			Day  int
@@ -249,6 +256,7 @@ type BaseRecord struct {
 			AccelerationTx float64
 		} //save the rate of pps
 	}
+	IP []string // ip address list for traffic transfer
 }
 
 type StaticRecord interface {

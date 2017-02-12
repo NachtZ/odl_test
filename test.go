@@ -156,6 +156,17 @@ func (base *Recorder) InitRecord(getStaistic func() []ODLInventoryNode) *Recorde
 				log.Println("Error in len(base[i].Records)")
 				return nil
 			}
+			if len(nc.AddressList) > 0 {
+				(*base).RawRecord[i].IP = make([]string, len(nc.AddressList))
+				for idx, t := range nc.AddressList {
+					(*base).RawRecord[i].IP[idx] = t.IP
+				}
+				log.Println("NC ", (*base).RawRecord[i].ID, "'s address is:")
+				for _, t := range (*base).RawRecord[i].IP {
+					log.Println(t)
+				}
+
+			}
 			i++
 		}
 	}
@@ -272,5 +283,5 @@ func SpeedMonitor() {
 }
 
 func main() {
-	testDeleteFlowEntry()
+	testInitRecord()
 }
