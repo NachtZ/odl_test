@@ -256,7 +256,8 @@ type BaseRecord struct {
 			AccelerationTx float64
 		} //save the rate of pps
 	}
-	IP []string // ip address list for traffic transfer
+	IP  []string // ip address list for traffic transfer
+	MAC []string // mac address list for traffic transfer
 }
 
 type StaticRecord interface {
