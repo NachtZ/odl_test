@@ -76,7 +76,22 @@ func (base ODLBasic) SentFlowConfig(nodeid string, flowconfig FlowConfig) {
 	flow.Instructions.List = make([]FlowEntryInstruction, 1)
 	flow.Instructions.List[0].ApplyAction.Actions = make([]FLowEntryApplyAction, 1)
 	flow.Instructions.List[0].ApplyAction.Actions[0].Order = 0 //default order
-	flow.Instructions.List[0].ApplyAction.Actions[0].OutputAcion.OutputNodeConnector = flowconfig.Outputnode
+	if flowconfig.Outputnode != "" {
+		flow.Instructions.List[0].ApplyAction.Actions[0].OutputAction = &OutputAction{
+			OutputNodeConnector: flowconfig.Outputnode,
+		}
+	}
+	if flowconfig.NwDstActionIP != "" {
+		if flowconfig.IpType == 6 {
+			flow.Instructions.List[0].ApplyAction.Actions[0].SetNwDstAction = &SetNwDstAction{
+				Ipv6Address: flowconfig.NwDstActionIP,
+			}
+		} else {
+			flow.Instructions.List[0].ApplyAction.Actions[0].SetNwDstAction = &SetNwDstAction{
+				Ipv4Address: flowconfig.NwDstActionIP,
+			}
+		}
+	}
 	//flow.Instructions.List[0].ApplyAction.Actions[0].OutputAcion.MaxLength =
 	if flowconfig.EtherType != 0 || flowconfig.EthDst != "" || flowconfig.EthSrc != "" { //ether config
 		var t EthernetMatch
@@ -152,12 +167,28 @@ func (base ODLBasic) DeleteFlowEntry(nodeid string, tableid int, flowid string) 
 	log.Println(string(contents))
 }
 
-func testDeleteFlowEntry(){
+func (base ODLBasic) TransferFlow(nodeid string, from, to string) { // set a flowentry in Node "nodeid", aim to tranfer flow from "from" to "to"
+	flowid := "4" //todo : need to add some
+	url := base.BaseUrl + "/restconf/config/opendaylight-inventory:nodes/node/" + nodeid + "/table/" + strconv.Itoa(0) + "/flow/" + flowid
+	log.Println(url)
+	flowconfig := FlowConfig{
+		Name:          "Tran" + from + "to" + to + "in" + nodeid,
+		Node:          nodeid,
+		ID:            flowid,
+		Priority:      1,
+		TableId:       0,  //todo
+		NwDstActionIP: to, //todo: change this to to's id.
+	}
+	flowconfig.IpConfig.Dst = from //todo: change this to from's id.
+	base.SentFlowConfig(nodeid, flowconfig)
+}
+
+func testDeleteFlowEntry() {
 	base := ODLBasic{
 		"http://10.108.20.110:8181",
 		"admin",
 		"admin",
-	}	
+	}
 	base.DeleteFlowEntry("openflow:1", 0, "1")
 }
 
@@ -182,8 +213,10 @@ func testPutFlowEntry() {
 	flow.Instructions.List = make([]FlowEntryInstruction, 1)
 	flow.Instructions.List[0].ApplyAction.Actions = make([]FLowEntryApplyAction, 1)
 	flow.Instructions.List[0].ApplyAction.Actions[0].Order = 0
-	flow.Instructions.List[0].ApplyAction.Actions[0].OutputAcion.OutputNodeConnector = "1"
-	flow.Instructions.List[0].ApplyAction.Actions[0].OutputAcion.MaxLength = 60
+	flow.Instructions.List[0].ApplyAction.Actions[0].OutputAction = &OutputAction{
+		"1",
+		60,
+	}
 	base.PutFlowEntry("openflow:1", flow)
 }
 

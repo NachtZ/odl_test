@@ -83,12 +83,20 @@ type FlowEntryMatchFiled struct {
 	} `json:"extensionLists,omitempty"`
 }
 
+type OutputAction struct {
+	OutputNodeConnector string `json:"output-node-connector,omitempty"`
+	MaxLength           uint16 `json:"max-length,omitempty"`
+}
+
+type SetNwDstAction struct {
+	Ipv4Address string `json:"ipv4-address,omitempty"`
+	Ipv6Address string `json:"ipv6-address,omitempty"`
+}
+
 type FLowEntryApplyAction struct { //Output Action
-	Order       int32 `json:"order"`
-	OutputAcion struct {
-		OutputNodeConnector string `json:"output-node-connector,omitempty"`
-		MaxLength           uint16 `json:"max-length,omitempty"`
-	} `json:"output-action,omitempty"`
+	Order          int32           `json:"order"`
+	OutputAction   *OutputAction   `json:"output-action,omitempty"`
+	SetNwDstAction *SetNwDstAction `json:"set-nw-dst-action,omitempty"`
 }
 
 //unused
@@ -121,18 +129,19 @@ type jsonFlowNodeInventoryFlow struct {
 }
 
 type FlowConfig struct {
-	Name       string //base info of a flow config
-	Cookie     int64
-	Node       string
-	ID         string
-	Priority   int
-	TableId    int64
-	Outputnode string // output destination of this flow config
-	EtherType  int    //Ether config
-	EthDst     string
-	EthSrc     string
-	IpType     uint8 // default v4. means if IpType !=6, this Type is v4
-	IpConfig   struct {
+	Name          string //base info of a flow config
+	Cookie        int64
+	Node          string
+	ID            string
+	Priority      int
+	TableId       int64
+	Outputnode    string // output destination of this flow config
+	NwDstActionIP string //set new dstination ip.
+	EtherType     int    //Ether config
+	EthDst        string
+	EthSrc        string
+	IpType        uint8 // default v4. means if IpType !=6, this Type is v4
+	IpConfig      struct {
 		Dst      string
 		Src      string
 		Protocol uint8 // use Protocol to judge What protocal match.
