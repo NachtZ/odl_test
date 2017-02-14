@@ -167,19 +167,30 @@ func (base ODLBasic) DeleteFlowEntry(nodeid string, tableid int, flowid string) 
 	log.Println(string(contents))
 }
 
-func (base ODLBasic) TransferFlow(nodeid string, from, to string) { // set a flowentry in Node "nodeid", aim to tranfer flow from "from" to "to"
+func (base ODLBasic) TransferFlow(nodeid string, from, to string, rec *Recorder) { // set a flowentry in Node "nodeid", aim to tranfer flow from "from" to "to"
 	flowid := "4" //todo : need to add some
 	url := base.BaseUrl + "/restconf/config/opendaylight-inventory:nodes/node/" + nodeid + "/table/" + strconv.Itoa(0) + "/flow/" + flowid
 	log.Println(url)
+	_, ok1 := (*rec).RecordMap[from]
+	_, ok2 := (*rec).RecordMap[to]
+	if !ok1 || !ok2 {
+		log.Println("Node ", from, "exsit:", ok1)
+		log.Println("Node ", to, "exsit:", ok2)
+		return
+	}
+	if len((*rec).RecordMap[from].IP) == 0 || len((*rec).RecordMap[to].IP) == 0 {
+		log.Println("IP list of from or to is nil", "from", len((*rec).RecordMap[from].IP), "to", len((*rec).RecordMap[to].IP))
+		return
+	}
 	flowconfig := FlowConfig{
 		Name:          "Tran" + from + "to" + to + "in" + nodeid,
 		Node:          nodeid,
 		ID:            flowid,
 		Priority:      1,
-		TableId:       0,  //todo
-		NwDstActionIP: to, //todo: change this to to's id.
+		TableId:       0,                          //todo
+		NwDstActionIP: (*rec).RecordMap[to].IP[0], //todo: I think one nc can only have one ip address.
 	}
-	flowconfig.IpConfig.Dst = from //todo: change this to from's id.
+	flowconfig.IpConfig.Dst = (*rec).RecordMap[from].IP[0] //todo: I think one nc can only have one ip address.
 	base.SentFlowConfig(nodeid, flowconfig)
 }
 
