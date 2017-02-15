@@ -61,6 +61,7 @@ func (base ODLBasic) PutFlowEntry(nodeid string, flow FlowEntry) {
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Println("Error")
+		return
 	}
 	contents, err := ioutil.ReadAll(resp.Body)
 	log.Println(string(contents))
@@ -168,7 +169,7 @@ func (base ODLBasic) DeleteFlowEntry(nodeid string, tableid int, flowid string) 
 }
 
 func (base ODLBasic) TransferFlow(nodeid string, from, to string, rec *Recorder) { // set a flowentry in Node "nodeid", aim to tranfer flow from "from" to "to"
-	flowid := "4" //todo : need to add some
+	flowid := "1" //todo : need to add some
 	url := base.BaseUrl + "/restconf/config/opendaylight-inventory:nodes/node/" + nodeid + "/table/" + strconv.Itoa(0) + "/flow/" + flowid
 	log.Println(url)
 	_, ok1 := (*rec).RecordMap[from]
@@ -186,7 +187,8 @@ func (base ODLBasic) TransferFlow(nodeid string, from, to string, rec *Recorder)
 		Name:          "Tran" + from + "to" + to + "in" + nodeid,
 		Node:          nodeid,
 		ID:            flowid,
-		Priority:      1,
+		Priority:      33000,
+		EtherType:     2048,
 		TableId:       0,                          //todo
 		NwDstActionIP: (*rec).RecordMap[to].IP[0], //todo: I think one nc can only have one ip address.
 	}
@@ -236,7 +238,7 @@ func testSentFlowConfig() {
 		Name:       "testSentFlowConfig",
 		Node:       "openflow:1",
 		ID:         "2",
-		Priority:   2,
+		Priority:   33000,
 		TableId:    0,
 		Outputnode: "openflow:1:2",
 		EtherType:  2048,
@@ -256,4 +258,23 @@ func testFlowEntryMgr() {
 		"admin",
 	}
 	base.GetFlowEntry("openflow:1", 0, "1")
+}
+
+func testTransferFlow() {
+	base := ODLBasic{
+		"http://10.108.20.110:8181",
+		"admin",
+		"admin",
+	}
+	from := &BaseRecord{
+		IP: []string{"10.0.0.2/32"},
+	}
+	to := &BaseRecord{
+		IP: []string{"10.0.0.3/32"},
+	}
+	var rec Recorder
+	rec.RecordMap = make(map[string]*BaseRecord)
+	rec.RecordMap["from"] = from
+	rec.RecordMap["to"] = to
+	base.TransferFlow("openflow:2", "from", "to", &rec)
 }

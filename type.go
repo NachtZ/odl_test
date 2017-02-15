@@ -256,7 +256,7 @@ type BaseRecord struct {
 			AccelerationTx float64
 		} //save the rate of pps
 	}
-	IP  []string // ip address list for traffic transfer
+	IP  []string // ip address list for traffic transfer todo, add mask for api base.transferflow
 	MAC []string // mac address list for traffic transfer
 }
 

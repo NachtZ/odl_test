@@ -234,6 +234,7 @@ func (base *Recorder) InitRecord(getStaistic func() []ODLInventoryNode) *Recorde
 		}
 		before = now
 	}
+	(*base).RecordMap = make(map[string]*BaseRecord)
 	for _, rec := range (*base).RawRecord {
 		(*base).RecordMap[rec.ID] = &rec
 	}
@@ -285,5 +286,5 @@ func SpeedMonitor() {
 }
 
 func main() {
-	testInitRecord()
+	testTransferFlow()
 }
