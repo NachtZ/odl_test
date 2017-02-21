@@ -1,3 +1,5 @@
+[TOC]
+
 personal backup, for ddos protect in opendaylight boron.   
 思路：  
 >1. 获取ODL网络中一段时间（比如一周，正常运行的网络特征，目前是只有bps，pps和两个速度的加速度。
