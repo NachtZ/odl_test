@@ -30,7 +30,7 @@ func GetNetworkTopology() {
 }
 
 func GetOpenflowNodes() []ODLInventoryNode {
-	baseurl := "http://10.108.20.110:8181/restconf"
+	baseurl := "http://10.108.37.153:8181/restconf"
 	//url := strings.Join([]string{baseurl,"operational/opendaylight-inventory:nodes"},"/")
 	//url := strings.Join([]string{baseurl,"operational/opendaylight-inventory:nodes/node/openflow:1/node-connector/openflow:1:1"},"/")
 	url := strings.Join([]string{baseurl, "operational/opendaylight-inventory:nodes"}, "/")
@@ -247,6 +247,7 @@ func testInitRecord() {
 	recorder.InitRecord(GetOpenflowNodes)
 }
 
+/*
 func printStatistic(before, now []ODLInventoryNode) {
 	for idx, node := range now {
 		if idx >= len(before) || before[idx].ID != node.ID {
@@ -273,6 +274,37 @@ func printStatistic(before, now []ODLInventoryNode) {
 		}
 	}
 }
+*/
+
+func printStatistic(before, now []ODLInventoryNode) {
+	for idx, node := range now {
+		if idx >= len(before) || before[idx].ID != node.ID {
+			//log.Println("Network Topo changed, Please wait!")
+			return
+		}
+		tmp := before[idx]
+		//log.Println("Node :", node.ID)
+		//log.Println("Node Info:", node.Manufacturer, node.Hardware, node.Software, node.SerialNumber)
+		//log.Println("NC statistic:")
+		for idx1, nc := range node.NodeConnectors {
+			//log.Println(nc.ID, "|", nc.Name)
+			if idx1 >= len(tmp.NodeConnectors) || nc.ID != tmp.NodeConnectors[idx1].ID {
+				//		log.Println("Network Topo changed, Please wait!")
+				return
+			}
+			time := nc.OPFstatics.Duration.Second - tmp.NodeConnectors[idx1].OPFstatics.Duration.Second
+			//log.Println("time:", time, nc.OPFstatics.Duration.Second, tmp.NodeConnectors[idx1].OPFstatics.Duration.Second)
+
+			if time == 0 {
+				time = 1
+			}
+			// format: nodename time: rxbps rxpps txbps txpps
+			log.Print(nc.Name, time, ":", nc.OPFstatics.Duration.Second, (nc.OPFstatics.Bytes.Rx-tmp.NodeConnectors[idx1].OPFstatics.Bytes.Rx)/time, (nc.OPFstatics.Pkts.Rx-tmp.NodeConnectors[idx1].OPFstatics.Pkts.Rx)/time, (nc.OPFstatics.Bytes.Tx-tmp.NodeConnectors[idx1].OPFstatics.Bytes.Tx)/time, (nc.OPFstatics.Pkts.Tx-tmp.NodeConnectors[idx1].OPFstatics.Pkts.Tx)/time)
+			//log.Println("Rx Speed:", (nc.OPFstatics.Bytes.Rx-tmp.NodeConnectors[idx1].OPFstatics.Bytes.Rx)/time, "bps", (nc.OPFstatics.Pkts.Rx-tmp.NodeConnectors[idx1].OPFstatics.Pkts.Rx)/time, "pps")
+			//log.Println("Tx Speed:", (nc.OPFstatics.Bytes.Tx-tmp.NodeConnectors[idx1].OPFstatics.Bytes.Tx)/time, "bps", (nc.OPFstatics.Pkts.Tx-tmp.NodeConnectors[idx1].OPFstatics.Pkts.Tx)/time, "pps")
+		}
+	}
+}
 
 func SpeedMonitor() {
 	before := GetOpenflowNodes()
@@ -286,5 +318,5 @@ func SpeedMonitor() {
 }
 
 func main() {
-	testTransferFlow()
+	SpeedMonitor()
 }
