@@ -277,6 +277,7 @@ func printStatistic(before, now []ODLInventoryNode) {
 */
 
 func printStatistic(before, now []ODLInventoryNode) {
+	var total int64
 	for idx, node := range now {
 		if idx >= len(before) || before[idx].ID != node.ID {
 			//log.Println("Network Topo changed, Please wait!")
@@ -303,7 +304,11 @@ func printStatistic(before, now []ODLInventoryNode) {
 			//log.Println("Rx Speed:", (nc.OPFstatics.Bytes.Rx-tmp.NodeConnectors[idx1].OPFstatics.Bytes.Rx)/time, "bps", (nc.OPFstatics.Pkts.Rx-tmp.NodeConnectors[idx1].OPFstatics.Pkts.Rx)/time, "pps")
 			//log.Println("Tx Speed:", (nc.OPFstatics.Bytes.Tx-tmp.NodeConnectors[idx1].OPFstatics.Bytes.Tx)/time, "bps", (nc.OPFstatics.Pkts.Tx-tmp.NodeConnectors[idx1].OPFstatics.Pkts.Tx)/time, "pps")
 		}
+		for _, nc := range node.ODLInventoryTables {
+			total += nc.Statistic.ActiveFlows
+		}
 	}
+	log.Println("total flow is ", total)
 }
 
 func SpeedMonitor() {
