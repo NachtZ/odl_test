@@ -22,7 +22,7 @@ personal backup, for ddos protect in opendaylight boron.
 
 可能用到的技术：
 包标签法，snort， VTN，docker
-
+(改方向了，以下表格没有用了。)
 完成情况：
 
 思路 | 完成度 | 预计时间  
