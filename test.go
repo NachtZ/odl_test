@@ -2,9 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -34,7 +37,7 @@ func GetOpenflowNodes() []ODLInventoryNode {
 	//url := strings.Join([]string{baseurl,"operational/opendaylight-inventory:nodes"},"/")
 	//url := strings.Join([]string{baseurl,"operational/opendaylight-inventory:nodes/node/openflow:1/node-connector/openflow:1:1"},"/")
 	url := strings.Join([]string{baseurl, "operational/opendaylight-inventory:nodes"}, "/")
-	log.Println(url)
+	//log.Println(url)
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)
 	req.SetBasicAuth("admin", "admin")
@@ -276,13 +279,20 @@ func printStatistic(before, now []ODLInventoryNode) {
 }
 */
 
+var data [][][]int64
+var name []string
+var flag bool
+
 func printStatistic(before, now []ODLInventoryNode) {
 	var total int64
+
+	ttmp := [][]int64{}
 	for idx, node := range now {
 		if idx >= len(before) || before[idx].ID != node.ID {
 			//log.Println("Network Topo changed, Please wait!")
 			return
 		}
+
 		tmp := before[idx]
 		//log.Println("Node :", node.ID)
 		//log.Println("Node Info:", node.Manufacturer, node.Hardware, node.Software, node.SerialNumber)
@@ -293,27 +303,36 @@ func printStatistic(before, now []ODLInventoryNode) {
 				//		log.Println("Network Topo changed, Please wait!")
 				return
 			}
+			ttmp1 := make([]int64, 4)
 			time := nc.OPFstatics.Duration.Second - tmp.NodeConnectors[idx1].OPFstatics.Duration.Second
 			//log.Println("time:", time, nc.OPFstatics.Duration.Second, tmp.NodeConnectors[idx1].OPFstatics.Duration.Second)
 
 			if time == 0 {
 				time = 1
 			}
+			if flag == false {
+				name = append(name, nc.Name)
+			}
+			ttmp1[0], ttmp1[1], ttmp1[2], ttmp1[3] = (nc.OPFstatics.Bytes.Rx-tmp.NodeConnectors[idx1].OPFstatics.Bytes.Rx)/time, (nc.OPFstatics.Pkts.Rx-tmp.NodeConnectors[idx1].OPFstatics.Pkts.Rx)/time, (nc.OPFstatics.Bytes.Tx-tmp.NodeConnectors[idx1].OPFstatics.Bytes.Tx)/time, (nc.OPFstatics.Pkts.Tx-tmp.NodeConnectors[idx1].OPFstatics.Pkts.Tx)/time
+			ttmp = append(ttmp, ttmp1)
 			// format: nodename time: rxbps rxpps txbps txpps
-			log.Print(nc.Name, time, ":", nc.OPFstatics.Duration.Second, (nc.OPFstatics.Bytes.Rx-tmp.NodeConnectors[idx1].OPFstatics.Bytes.Rx)/time, (nc.OPFstatics.Pkts.Rx-tmp.NodeConnectors[idx1].OPFstatics.Pkts.Rx)/time, (nc.OPFstatics.Bytes.Tx-tmp.NodeConnectors[idx1].OPFstatics.Bytes.Tx)/time, (nc.OPFstatics.Pkts.Tx-tmp.NodeConnectors[idx1].OPFstatics.Pkts.Tx)/time)
+			fmt.Println(nc.Name, time, ":", nc.OPFstatics.Duration.Second, (nc.OPFstatics.Bytes.Rx-tmp.NodeConnectors[idx1].OPFstatics.Bytes.Rx)/time, (nc.OPFstatics.Pkts.Rx-tmp.NodeConnectors[idx1].OPFstatics.Pkts.Rx)/time, (nc.OPFstatics.Bytes.Tx-tmp.NodeConnectors[idx1].OPFstatics.Bytes.Tx)/time, (nc.OPFstatics.Pkts.Tx-tmp.NodeConnectors[idx1].OPFstatics.Pkts.Tx)/time)
 			//log.Println("Rx Speed:", (nc.OPFstatics.Bytes.Rx-tmp.NodeConnectors[idx1].OPFstatics.Bytes.Rx)/time, "bps", (nc.OPFstatics.Pkts.Rx-tmp.NodeConnectors[idx1].OPFstatics.Pkts.Rx)/time, "pps")
 			//log.Println("Tx Speed:", (nc.OPFstatics.Bytes.Tx-tmp.NodeConnectors[idx1].OPFstatics.Bytes.Tx)/time, "bps", (nc.OPFstatics.Pkts.Tx-tmp.NodeConnectors[idx1].OPFstatics.Pkts.Tx)/time, "pps")
 		}
 		for _, nc := range node.ODLInventoryTables {
 			total += nc.Statistic.ActiveFlows
 		}
+
 	}
-	log.Println("total flow is ", total)
+	data = append(data, ttmp)
+	flag = true
+	//fmt.Println("total flow is ", total)
 }
 
 func SpeedMonitor() {
 	before := GetOpenflowNodes()
-	for {
+	for i := 0; i < 100; i++ {
 		time.Sleep(5 * time.Second)
 		now := GetOpenflowNodes()
 		printStatistic(before, now)
@@ -324,4 +343,24 @@ func SpeedMonitor() {
 
 func main() {
 	SpeedMonitor()
+	file, _ := os.Create("d://data" + time.Now().Format("2006_01_02_15_04_05") + ".txt")
+	/*
+		for i := 0; i < len(data[0]); i++ {
+			file.WriteString(name[i] + "\n")
+			for j := 0; j < len(data); j++ {
+				file.WriteString(strconv.FormatInt(data[j][i][0], 10) + "," + strconv.FormatInt(data[j][i][1], 10) + "," + strconv.FormatInt(data[j][i][2], 10) + "," + strconv.FormatInt(data[j][i][3], 10) + "\n")
+			}
+			file.WriteString("\n")
+		}
+	*/
+	for j := 0; j < len(data[0]); j++ {
+		file.WriteString(name[j] + ",")
+	}
+	file.WriteString("\n")
+	for i := 0; i < len(data); i++ {
+		for j := 0; j < len(data[0]); j++ {
+			file.WriteString(strconv.FormatInt(data[i][j][3], 10) + ",")
+		}
+		file.WriteString("\n")
+	}
 }
