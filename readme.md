@@ -21,9 +21,9 @@ personal backup, for ddos protect in opendaylight boron.
 ## 基于流表的流量统计，output action可以试试看是不是output normal来实现。 ##
 
 可能用到的技术：
-包标签法，snort， VTN，docker
-
-完成情况：
+包标签法，snort， VTN，docker  
+(改方向了，以下表格没有用了。)  
+完成情况：  
 
 思路 | 完成度 | 预计时间  
 --- | --- | ---
