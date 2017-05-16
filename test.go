@@ -281,6 +281,7 @@ func printStatistic(before, now []ODLInventoryNode) {
 
 var data [][][]int64
 var name []string
+var ip []string
 var flag bool
 
 func printStatistic(before, now []ODLInventoryNode) {
@@ -312,6 +313,11 @@ func printStatistic(before, now []ODLInventoryNode) {
 			}
 			if flag == false {
 				name = append(name, nc.Name)
+				if len(nc.AddressList) > 0 {
+					ip = append(ip, nc.AddressList[0].IP)
+				} else {
+					ip = append(ip, "nil")
+				}
 			}
 			ttmp1[0], ttmp1[1], ttmp1[2], ttmp1[3] = (nc.OPFstatics.Bytes.Rx-tmp.NodeConnectors[idx1].OPFstatics.Bytes.Rx)/time, (nc.OPFstatics.Pkts.Rx-tmp.NodeConnectors[idx1].OPFstatics.Pkts.Rx)/time, (nc.OPFstatics.Bytes.Tx-tmp.NodeConnectors[idx1].OPFstatics.Bytes.Tx)/time, (nc.OPFstatics.Pkts.Tx-tmp.NodeConnectors[idx1].OPFstatics.Pkts.Tx)/time
 			ttmp = append(ttmp, ttmp1)
@@ -333,6 +339,7 @@ func printStatistic(before, now []ODLInventoryNode) {
 func SpeedMonitor() {
 	before := GetOpenflowNodes()
 	for i := 0; i < 100; i++ {
+		fmt.Println("Now loop ", i, "times")
 		time.Sleep(5 * time.Second)
 		now := GetOpenflowNodes()
 		printStatistic(before, now)
@@ -343,7 +350,7 @@ func SpeedMonitor() {
 
 func main() {
 	SpeedMonitor()
-	file, _ := os.Create("d://data" + time.Now().Format("2006_01_02_15_04_05") + ".txt")
+	file, _ := os.Create("d://data" + time.Now().Format("2006_01_02_15_04_05") + ".csv")
 	/*
 		for i := 0; i < len(data[0]); i++ {
 			file.WriteString(name[i] + "\n")
@@ -353,14 +360,22 @@ func main() {
 			file.WriteString("\n")
 		}
 	*/
-	for j := 0; j < len(data[0]); j++ {
-		file.WriteString(name[j] + ",")
-	}
-	file.WriteString("\n")
-	for i := 0; i < len(data); i++ {
+	types := []string{"rxbps", "rxpps", "txbps", "txpps"}
+	for t := 0; t < 4; t++ {
+		file.WriteString(types[t] + "\n")
 		for j := 0; j < len(data[0]); j++ {
-			file.WriteString(strconv.FormatInt(data[i][j][3], 10) + ",")
+			file.WriteString(name[j] + ",")
 		}
 		file.WriteString("\n")
+		for j := 0; j < len(data[0]); j++ {
+			file.WriteString(ip[j] + ",")
+		}
+		file.WriteString("\n")
+		for i := 0; i < len(data); i++ {
+			for j := 0; j < len(data[i]); j++ {
+				file.WriteString(strconv.FormatInt(data[i][j][t], 10) + ",")
+			}
+			file.WriteString("\n")
+		}
 	}
 }
